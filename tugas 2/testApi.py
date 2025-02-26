@@ -1,36 +1,43 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
 
 app = FastAPI()
 
-# Model untuk item
-class Item(BaseModel):
-    id: int
+class User(BaseModel):
     name: str
-    description: str = None
+    age: int
+    email: EmailStr
+    phone: str
 
-# Database sementara
-items_db = []
+users_db = []
+user_counter = 1
 
-# Endpoint GET: Mendapatkan semua item
-@app.get("/items", response_model=List[Item])
-def get_items():
-    return items_db
+@app.get("/users", response_model=List[User])
+def get_users():
+    return users_db
 
-# Endpoint POST: Menambahkan item baru
-@app.post("/items", response_model=Item)
-def create_item(item: Item):
-    items_db.append(item)
-    return item
+@app.get("/users/{user_id}")
+def get_user_by_id(user_id: int):
+    for user in users_db:
+        if user["id"] == user_id:
+            return user
+    raise HTTPException(status_code=404, detail="User not found")
 
-# Endpoint DELETE: Menghapus item berdasarkan ID
-@app.delete("/items/{item_id}")
-def delete_item(item_id: int):
-    for index, item in enumerate(items_db):
-        if item.id == item_id:
-            del items_db[index]
-            return {"message": "Item deleted successfully"}
-    raise HTTPException(status_code=404, detail="Item not found")
+@app.post("/users")
+def create_user(user: User):
+    global user_counter
+    new_user = {"id": user_counter, "name": user.name, "age": user.age, "email": user.email, "phone": user.phone}
+    users_db.append(new_user)
+    user_counter += 1
+    return new_user
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
+    for index, user in enumerate(users_db):
+        if user["id"] == user_id:
+            del users_db[index]
+            return {"message": "User deleted successfully"}
+    raise HTTPException(status_code=404, detail="User not found")
 
 # Jalankan dengan `uvicorn nama_file:app --reload`
